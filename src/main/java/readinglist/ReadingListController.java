@@ -3,6 +3,7 @@ package readinglist;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public class ReadingListController {
 
 	@RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
 	public String deleteFromReadingList(@PathVariable String id) {
-		readingListRepository.delete(id);
+		readingListRepository.deleteById(id);
 		logger.info("Deleted a Book from the reading list: " + "Book ID:"+id);
 		return "redirect:/readingList";
 	}
@@ -70,7 +71,7 @@ public class ReadingListController {
 	@RequestMapping(value = "/edit/{id}", method = RequestMethod.GET)
 	public ModelAndView editReadingListView(@PathVariable String id) {
 		ModelAndView model = new ModelAndView("editReadingList");
-		Book book = readingListRepository.findOne(id);
+		Optional<Book> book = readingListRepository.findById(id);
 		model.addObject("book", book);
 		model.addObject("serverIP", this.ipaddress);
 		return model;
@@ -80,14 +81,15 @@ public class ReadingListController {
 	public String editReadingListItem(Book updatedBook, @RequestParam String action) {
 
 		if (action.equals("update")) {
-			Book book = readingListRepository.findOne(updatedBook.getId());
-			book.setTitle(updatedBook.getTitle());
-			book.setAuthor(updatedBook.getAuthor());
-			book.setIsbn(updatedBook.getIsbn());
-			book.setDescription(updatedBook.getDescription());
-			readingListRepository.save(book);
-			logger.info("Edited a Book from the reading list: " + book);
-
+			Optional<Book> maybeBook = readingListRepository.findById(updatedBook.getId());
+			maybeBook.ifPresent(book -> {
+				book.setTitle(updatedBook.getTitle());
+				book.setAuthor(updatedBook.getAuthor());
+				book.setIsbn(updatedBook.getIsbn());
+				book.setDescription(updatedBook.getDescription());
+				readingListRepository.save(book);
+				logger.info("Edited a Book from the reading list: " + book);
+			});
 		}
 
 		return "redirect:/readingList";
